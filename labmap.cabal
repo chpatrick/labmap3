@@ -1,0 +1,19 @@
+name:              labmap
+version:           3.0
+build-type:        Simple
+cabal-version:     >= 1.8
+category:          Hardware
+author:            Patrick Chilton <chpatrick@gmail.com>
+maintainer:        Patrick Chilton <chpatrick@gmail.com>
+homepage:          https://github.com/vahokif/labmap3
+bug-reports:       https://github.com/vahokif/labmap3
+synopsis:          Lab scanner for Imperial College
+description:       Lab scanner for Imperial College
+license:           MIT
+license-file:      LICENSE
+
+executable labmap
+  main-is: Labmap.hs
+  build-depends: base, time, regex-pcre, process, optparse-applicative, containers, text, bytestring, aeson, unix, parsec, filepath, directory
+  ghc-options: -O2 -threaded
+
