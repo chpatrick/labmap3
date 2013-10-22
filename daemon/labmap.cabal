@@ -14,6 +14,6 @@ license-file:      LICENSE
 
 executable labmap
   main-is: Labmap.hs
-  build-depends: base, time, regex-pcre, process, optparse-applicative, containers, text, bytestring, aeson, unix, parsec, filepath, directory
+  build-depends: base, time, regex-pcre, process, optparse-applicative, containers, text, bytestring, aeson, unix, parsec, filepath, directory, unordered-containers
   ghc-options: -O2 -threaded
 
