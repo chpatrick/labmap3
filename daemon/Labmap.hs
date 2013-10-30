@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, MultiWayIf, LambdaCase, NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings, MultiWayIf, LambdaCase, RecordWildCards #-}
 
 module Main where
 
@@ -85,7 +85,7 @@ loadConfig = do
 
 scanCommand :: IO ()
 scanCommand = do
-  LabmapConf { sshOpts, machines, outputFile, openingHour, closingHour, logLevel } <- loadConfig
+  LabmapConf { .. } <- loadConfig
   updateGlobalLogger "labmap" (setLevel logLevel)
   users <- cache (hours 5) getAllUsers
   labState <- newIORef (M.empty)
