@@ -1,4 +1,4 @@
-module Labmap.Users where
+module Labmap.Users(getAllUsers, User(..), Users) where
 
 import Labmap.Unix
 import Labmap.Photo
@@ -15,7 +15,9 @@ data User = User
   , groups :: [ Text ]
   } deriving Show
 
-getAllUsers :: IO (M.Map Text User)
+type Users = M.Map Text User
+
+getAllUsers :: IO Users
 getAllUsers = do
   ps <- getPhotos
   ( gm, gn ) <- getGroupInfo

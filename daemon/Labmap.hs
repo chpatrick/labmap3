@@ -12,6 +12,7 @@ import Control.Applicative
 import Control.Concurrent
 import Control.Concurrent.Chan
 import Control.Monad
+import Control.Monad.Trans
 import Data.Aeson
 import Data.Data
 import qualified Data.HashMap.Strict as H
@@ -27,6 +28,7 @@ import System.Environment
 import System.Exit
 import System.Log.Logger
 import System.Posix.Files
+import Web.Scotty as S
 
 data LabmapConf = LabmapConf
   { sshOpts :: [ String ]
@@ -35,6 +37,8 @@ data LabmapConf = LabmapConf
   , openingHour :: Int
   , closingHour :: Int
   , logLevel :: Priority
+  , scanThreads :: Int
+  , usersCacheHours :: Int
   } deriving (Read, Show)
 
 instance FromJSON LabmapConf where
@@ -45,7 +49,9 @@ instance FromJSON LabmapConf where
         conf .: "outputFile" <*>
         conf .: "openingHour" <*>
         conf .: "closingHour" <*>
-        (read <$> (conf .: "logLevel"))
+        (read <$> (conf .: "logLevel")) <*>
+        conf .: "scanThreads" <*>
+        conf .: "usersCacheHours"
 
 instance ToJSON User where
   toJSON u = object
@@ -73,7 +79,7 @@ main :: IO ()
 main = do
   as <- getArgs
   case as of
-    [ "scan" ] -> scanCommand
+    [ "server" ] -> serverCommand
     [ "getuser" ] -> getUser >>= print
     _ -> putStrLn "usage: labmap scan/getuser"
 
@@ -83,20 +89,19 @@ loadConfig = do
     Nothing -> putStrLn "Failed to parse configuration." >> exitFailure
     Just c -> return c
 
-scanCommand :: IO ()
-scanCommand = do
-  LabmapConf { .. } <- loadConfig
-  updateGlobalLogger "labmap" (setLevel logLevel)
-  users <- cache (hours 5) getAllUsers
-  labState <- newIORef (M.empty)
+type LabState = Either Text (M.Map Text Value)
+
+scanForever :: LabmapConf -> Cached Users -> MVar LabState -> IO ()
+scanForever LabmapConf{..} users labState = do
   resultChan <- newChan
   self <- findSelf
-  scan sshOpts machines [ self, "getuser" ] resultChan 8
   noticeM "labmap" "Starting scan."
+  scan sshOpts machines [ self, "getuser" ] resultChan scanThreads
   forever $ do
     sleepTime openingHour closingHour >>= \case
       Just s -> do
         infoM "labmap" ("Sleeping for " <> show s)
+        putMVar labState (Left "CLOSED")
         threadDelay (round (s * 1000000))
         infoM "labmap" "Woke up"
       Nothing -> return ()
@@ -110,7 +115,27 @@ scanCommand = do
           Nothing -> "UNKNOWN"
           Just ui -> toJSON ui
     debugM "labmap" (T.unpack m <> ": " <> show s)
-    ls <- readIORef labState
-    let ls' = M.insert m s' ls
-    writeIORef labState ls'
-    BSL8.writeFile outputFile (encode ls')
+    modifyMVar_ labState $ \ls -> return $ Right $ case ls of
+      Left _ -> M.singleton m s'
+      Right ls -> M.insert m s' ls
+
+serve :: MVar LabState -> IO ()
+serve labState = do
+  noticeM "labmap" "Starting server."
+  scotty 3000 $ do
+    get "/labState" $ do
+      s <- liftIO $ readMVar labState
+      S.json $ case s of
+        Left m -> object ["unavailable" .= m]
+        Right s -> toJSON s
+
+
+serverCommand :: IO ()
+serverCommand = do
+  conf@LabmapConf{..} <- loadConfig
+  updateGlobalLogger "labmap" (setLevel logLevel)
+  users <- cache (hours usersCacheHours) getAllUsers
+  labState <- newMVar (Right $ M.empty)
+  forkIO $ scanForever conf users labState
+
+  serve labState
