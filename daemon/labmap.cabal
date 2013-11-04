@@ -33,6 +33,7 @@ executable labmap
     hslogger,
     yaml,
     scotty,
-    mtl
-  ghc-options: -O2 -threaded -Wall
+    mtl,
+    wai-middleware-static
+  ghc-options: -O2 -threaded -Wall -fno-warn-unused-do-bind
 

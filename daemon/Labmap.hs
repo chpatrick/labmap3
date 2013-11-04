@@ -20,6 +20,7 @@ import qualified Data.Text as T
 import Data.Time
 import qualified Data.Map as M
 import qualified Data.Yaml as Yaml
+import Network.Wai.Middleware.Static
 import Options.Applicative
 import System.Log.Logger
 import System.Posix.Files
@@ -50,8 +51,8 @@ data LabmapConf = LabmapConf
   } deriving (Read, Show)
 
 instance FromJSON LabmapConf where
-  parseJSON (Object conf)
-    = LabmapConf <$>
+  parseJSON
+    = withObject "LabmapConf" $ \conf -> LabmapConf <$>
         (words <$> (conf .: "sshOpts")) <*>
         (H.toList <$> (conf .: "machines")) <*>
         conf .: "outputFile" <*>
@@ -122,12 +123,17 @@ serve :: Int -> MVar LabState -> IO ()
 serve port labState = do
   noticeM "labmap" "Starting server."
   scotty port $ do
+    middleware $ staticPolicy (noDots >-> addBase "static")
+
+    get "/" $ do
+      addHeader "Content-Type" "text/html"
+      file "static/index.html"
+
     get "/labState" $ do
       s <- liftIO $ readMVar labState
       S.json $ case s of
         Left m -> object ["unavailable" .= m]
         Right state -> toJSON state
-
 
 serverCommand :: String -> IO ()
 serverCommand configFile = do
