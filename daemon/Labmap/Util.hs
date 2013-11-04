@@ -1,6 +1,9 @@
 {-# LANGUAGE NamedFieldPuns #-}
 
-module Labmap.Util where
+module Labmap.Util
+  ( LazyChan, readLazyChan
+  , Cached(), cache, getCached, seconds, minutes, hours
+  ) where
 
 import Control.Concurrent.MVar
 import Data.Time

@@ -5,6 +5,7 @@ import Control.Concurrent
 import Data.Text (Text)
 import qualified Data.Text as T
 import System.Exit
+import System.Log.Logger
 import System.Process
 import Text.Printf
 import Text.Read
@@ -27,6 +28,7 @@ createWorkQueue machines
 scanMachine :: [ String ] -> [ String ] -> String -> IO (Maybe MachineState)
 scanMachine sshOpts cmd hostname = do
   let args = sshOpts ++ [ hostname ] ++ cmd
+  debugM "labmap" $ unwords ("scan command:" : "ssh" : args)
   ( exitCode, result, _ ) <- readProcessWithExitCode "ssh" args ""
   return (guard (exitCode == ExitSuccess) >> readMaybe result)
 
