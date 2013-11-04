@@ -2,17 +2,12 @@ module Labmap.Scanner where
 
 import Control.Monad
 import Control.Concurrent
-import Control.Concurrent.Chan
-import Control.Concurrent.MVar
-import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 import System.Exit
-import System.Posix.Files
 import System.Process
 import Text.Printf
 import Text.Read
-import Text.Regex.PCRE
 
 import Labmap.Common
 import Labmap.Util
@@ -32,7 +27,7 @@ createWorkQueue machines
 scanMachine :: [ String ] -> [ String ] -> String -> IO (Maybe MachineState)
 scanMachine sshOpts cmd hostname = do
   let args = (sshOpts ++ [ hostname ] ++ cmd)
-  ( exitCode, result, err ) <- readProcessWithExitCode "ssh" args ""
+  ( exitCode, result, _ ) <- readProcessWithExitCode "ssh" args ""
   return (guard (exitCode == ExitSuccess) >> readMaybe result)
 
 scanner :: [ String ] -> [ String ] -> LazyChan Hostname -> Chan ( Text, Maybe MachineState ) -> IO ()

@@ -13,10 +13,7 @@ import qualified Data.Map as M
 import System.Directory
 import System.FilePath
 import Text.Parsec
-import Text.Parsec.Text
-import Text.Read
-
-type UserName = ( Text, Maybe Text )
+import Text.Parsec.Text()
 
 parseFilename :: FilePath -> Maybe Text
 parseFilename fn

@@ -3,7 +3,6 @@ module Labmap.GetUser where
 import Labmap.Common
 
 import Data.List
-import Data.Text (Text)
 import qualified Data.Text as T
 import System.Utmp
 

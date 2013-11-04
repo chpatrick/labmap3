@@ -10,14 +10,10 @@ import Labmap.Util
 
 import Control.Applicative
 import Control.Concurrent
-import Control.Concurrent.Chan
 import Control.Monad
 import Control.Monad.Trans
 import Data.Aeson
-import Data.Data
 import qualified Data.HashMap.Strict as H
-import qualified Data.ByteString.Lazy.Char8 as BSL8
-import Data.IORef
 import Data.Monoid
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -53,8 +49,8 @@ instance FromJSON LabmapConf where
         conf .: "scanThreads" <*>
         conf .: "usersCacheHours"
 
-instance ToJSON User where
-  toJSON u = object
+userToJSON :: User -> Value
+userToJSON u = object
     [ "username" .= username u
     , "fullName" .= fullName u
     , "photo" .= photo u
@@ -66,7 +62,7 @@ findSelf = readSymbolicLink "/proc/self/exe"
 
 sleepTime :: Int -> Int -> IO (Maybe NominalDiffTime)
 sleepTime open close = do
-  now@(ZonedTime (LocalTime day (TimeOfDay h m s)) tz) <- getZonedTime
+  now@(ZonedTime (LocalTime day (TimeOfDay h _ _)) tz) <- getZonedTime
   return $ do
     wakeDay <- if
       | h < open -> Just day
@@ -113,11 +109,11 @@ scanForever LabmapConf{..} users labState = do
         ui <- M.lookup un <$> getCached users
         return $ case ui of
           Nothing -> "UNKNOWN"
-          Just ui -> toJSON ui
+          Just userInfo -> userToJSON userInfo
     debugM "labmap" (T.unpack m <> ": " <> show s)
     modifyMVar_ labState $ \ls -> return $ Right $ case ls of
       Left _ -> M.singleton m s'
-      Right ls -> M.insert m s' ls
+      Right state -> M.insert m s' state
 
 serve :: MVar LabState -> IO ()
 serve labState = do
@@ -127,7 +123,7 @@ serve labState = do
       s <- liftIO $ readMVar labState
       S.json $ case s of
         Left m -> object ["unavailable" .= m]
-        Right s -> toJSON s
+        Right state -> toJSON state
 
 
 serverCommand :: IO ()

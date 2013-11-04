@@ -5,7 +5,6 @@
 module System.Utmp(UtmpType(..), Utmp(..), getutents) where
 
 import Control.Applicative
-import Data.Int
 import Foreign
 import Foreign.C.String
 
