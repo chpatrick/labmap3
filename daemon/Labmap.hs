@@ -35,6 +35,7 @@ data LabmapConf = LabmapConf
   , logLevel :: Priority
   , scanThreads :: Int
   , usersCacheHours :: Int
+  , port :: Int
   } deriving (Read, Show)
 
 instance FromJSON LabmapConf where
@@ -47,7 +48,8 @@ instance FromJSON LabmapConf where
         conf .: "closingHour" <*>
         (read <$> (conf .: "logLevel")) <*>
         conf .: "scanThreads" <*>
-        conf .: "usersCacheHours"
+        conf .: "usersCacheHours" <*>
+        conf .: "port"
 
 userToJSON :: User -> Value
 userToJSON u = object
@@ -115,10 +117,10 @@ scanForever LabmapConf{..} users labState = do
       Left _ -> M.singleton m s'
       Right state -> M.insert m s' state
 
-serve :: MVar LabState -> IO ()
-serve labState = do
+serve :: Int -> MVar LabState -> IO ()
+serve port labState = do
   noticeM "labmap" "Starting server."
-  scotty 3000 $ do
+  scotty port $ do
     get "/labState" $ do
       s <- liftIO $ readMVar labState
       S.json $ case s of
@@ -134,4 +136,4 @@ serverCommand = do
   labState <- newMVar (Right $ M.empty)
   forkIO $ scanForever conf users labState
 
-  serve labState
+  serve port labState

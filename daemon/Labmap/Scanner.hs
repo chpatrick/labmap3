@@ -26,7 +26,7 @@ createWorkQueue machines
 
 scanMachine :: [ String ] -> [ String ] -> String -> IO (Maybe MachineState)
 scanMachine sshOpts cmd hostname = do
-  let args = (sshOpts ++ [ hostname ] ++ cmd)
+  let args = sshOpts ++ [ hostname ] ++ cmd
   ( exitCode, result, _ ) <- readProcessWithExitCode "ssh" args ""
   return (guard (exitCode == ExitSuccess) >> readMaybe result)
 

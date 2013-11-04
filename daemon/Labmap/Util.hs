@@ -24,7 +24,7 @@ cache lifespan action = do
   val <- action
   now <- getCurrentTime
   value <- newMVar ( val, now )
-  return $ Cached
+  return Cached
     { action = action
     , value = value
     , lifespan = lifespan
