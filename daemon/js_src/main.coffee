@@ -8,7 +8,8 @@ availableColor = '#9DD1B5'
 zoom = d3.behavior.zoom()
 
 adjustZoom = ->
-    d3.select('#viewport').attr('transform', "translate(#{d3.event.translate}) scale(#{d3.event.scale})");
+  d3.select('#viewport')
+    .attr('transform', "translate(#{d3.event.translate}) scale(#{d3.event.scale})");
 
 machineGroups = [ 'pixel', 'texel', 'matrix', 'visual', 'corona', 'edge', 'unsgnd' ]
 
@@ -69,13 +70,21 @@ updateMachines = ->
               .delay(500)
               .style('opacity', 1)
               .each 'end', -> statusRect.attr('visibility', 'hidden')
-            title.text "#{d.hostname} - #{d.state.fullName}"
+            title.text "#{d.hostname} - #{d.state.fullName} (#{d.state.username})"
 
 d3.xml 'labmap.svg', 'image/svg+xml', (xml) ->
   svg = d3.select('#map').select -> @appendChild xml.documentElement
 
   svg
     .call(zoom.on 'zoom', adjustZoom)
+
+  desiredSize = window.innerWidth * 0.8
+
+  xShift = (window.innerWidth - desiredSize) / 2
+  yShift = (window.innerHeight - desiredSize) / 2
+
+  zoom.size [desiredSize, desiredSize]
+  zoom.translate [xShift, yShift]
 
   d3.json 'layout.json', (err, layout) ->
     machines = []
