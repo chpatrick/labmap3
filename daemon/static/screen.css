@@ -1,0 +1,21 @@
+body {
+  background-color: #FF9A9A;
+  color: #FDFDFD;
+  font-family: sans-serif;
+}
+
+#labmapSVG {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.computer-unavailable {
+  fill: #D19D9D;
+}
+
+.computer-available {
+  fill: #9DD1B5;
+}

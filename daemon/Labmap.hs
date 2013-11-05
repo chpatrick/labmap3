@@ -129,7 +129,7 @@ serve port labState = do
       addHeader "Content-Type" "text/html"
       file "static/index.html"
 
-    get "/labState" $ do
+    get "/labstate" $ do
       s <- liftIO $ readMVar labState
       S.json $ case s of
         Left m -> object ["unavailable" .= m]

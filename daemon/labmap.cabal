@@ -35,5 +35,5 @@ executable labmap
     scotty,
     mtl,
     wai-middleware-static
-  ghc-options: -O2 -threaded -Wall -fno-warn-unused-do-bind
+  ghc-options: -O2 -threaded -Wall -fno-warn-unused-do-bind -with-rtsopts=-N
 
