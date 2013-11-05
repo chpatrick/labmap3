@@ -132,7 +132,7 @@ serve port labState = do
     get "/labstate" $ do
       s <- liftIO $ readMVar labState
       S.json $ case s of
-        Left m -> object ["unavailable" .= m]
+        Left m -> object ["UNAVAILABLE" .= m]
         Right state -> toJSON state
 
 serverCommand :: String -> IO ()
