@@ -7,7 +7,7 @@
   "desks-049-052": [{"group": "visual", "from": 21, "to": 18}],
   "desks-053-061": [{"group": "edge",   "from": 15, "to":  7}],
   "desks-062-066": [{"group": "edge",   "from": 20, "to": 16}],
-  "desks-067-069": [{"group": "unsgnd", "from": 61, "to": 70}],
+  "desks-067-069": [{"group": "edge",   "from": 24, "to": 21}],
   "desks-070-073": [{"group": "edge",   "from": 28, "to": 25}],
   "desks-074-088": [{"group": "corona", "from": 22, "to": 35}],
   "desks-089-091": [{"group": "unsgnd", "from": 10, "to": 20}],

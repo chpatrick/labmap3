@@ -8,15 +8,20 @@ availableColor = '#9DD1B5'
 zoom = d3.behavior.zoom()
 
 adjustZoom = ->
-  d3.select('#viewport')
-    .attr('transform', "translate(#{d3.event.translate}) scale(#{d3.event.scale})");
+  transform = "translate(#{d3.event.translate}) scale(#{d3.event.scale})"
 
-machineGroups = [ 'pixel', 'texel', 'matrix', 'visual', 'corona', 'edge', 'unsgnd' ]
+  d3.select('#viewport').attr('transform', transform)
+  d3.select('#hoisted').attr('transform', transform)
+
+currentState = null
+currentFilter = null
 
 createMachine = (d, i) ->
   g = d3.select this
   x = d.pos.x - photoWidth / 2
   y = d.pos.y - photoHeight / 2
+
+  g.attr 'id', d.hostname
 
   g.append('title').text d.hostname
 
@@ -38,18 +43,42 @@ createMachine = (d, i) ->
     .attr('clip-path', 'url(#photo-clip-path)')
     .style('opacity', 0)
 
+availableFilter = (d, i) -> d.state == 'AVAILABLE'
+
+updateFilter = ->
+  matchingMachines = []
+
+  overlayOpacity = if currentFilter? then 0.5 else 0
+
+  d3.select('#overlay')
+    .transition()
+    .attr('opacity', overlayOpacity)
+
+  if currentFilter?
+    matchingMachines = (m for m in currentState when m.state is 'AVAILABLE')
+
+  hoists = d3.select('#hoisted')
+    .selectAll('use')
+    .data(matchingMachines, (d) -> d.hostname)
+
+  hoists.enter()
+    .append('use')
+    .attr('xlink:href', (d) -> '#' + d.hostname)
+
+  hoists.exit().remove()
+
 updateMachines = ->
   d3.json '/labstate', (err, ls) ->
     if ls['UNAVAILABLE']
       # message
     else
-      stateData = for hostname, state of ls
+      currentState = for hostname, state of ls
         hostname: hostname
         state: state
 
       d3.select('#computers')
         .selectAll('g')
-        .data(stateData, (d) -> d.hostname)
+        .data(currentState, (d) -> d.hostname)
         .each (d, i) ->
           g = d3.select this
           statusRect = g.select 'rect'
@@ -65,32 +94,35 @@ updateMachines = ->
             title.text "#{d.hostname} - #{d.state.toLowerCase()}"
           else
             photo
-              .attr('xlink:href', 'img/' + d.state.photo)
+              .attr('xlink:href', 'img/' + (d.state.photo || 'anon.jpg'))
               .transition()
               .delay(500)
               .style('opacity', 1)
               .each 'end', -> statusRect.attr('visibility', 'hidden')
             title.text "#{d.hostname} - #{d.state.fullName} (#{d.state.username})"
 
+    updateFilter()
+
 d3.xml 'labmap.svg', 'image/svg+xml', (xml) ->
   svg = d3.select('#map').select -> @appendChild xml.documentElement
 
-  svg
-    .call(zoom.on 'zoom', adjustZoom)
+  svg.call(zoom.on 'zoom', adjustZoom)
 
-  desiredSize = window.innerWidth * 0.8
+  desiredSize = window.innerHeight * 0.8
+  scale = desiredSize / 750
 
-  xShift = (window.innerWidth - desiredSize) / 2
+  xShift = (window.innerWidth - desiredSize) / 2 * 0.95
   yShift = (window.innerHeight - desiredSize) / 2
 
-  zoom.size [desiredSize, desiredSize]
+  zoom.scale scale
   zoom.translate [xShift, yShift]
+  zoom.event svg
 
   d3.json 'layout.json', (err, layout) ->
     machines = []
 
     for spline,descs of layout
-      spline = d3.select('#' + spline)[0][0]
+      spline = d3.select('#' + spline).node()
       splineLen = spline.getTotalLength()
 
       splineMachines = []      
@@ -116,3 +148,10 @@ d3.xml 'labmap.svg', 'image/svg+xml', (xml) ->
       .each createMachine
   
     setInterval updateMachines, 1000
+
+    d3.select('#filter-available').on 'change', ->
+      if d3.select(this).property('checked')
+        currentFilter = (d, i) -> d.state is 'AVAILABLE'
+      else
+        currentFilter = null
+      updateFilter()
