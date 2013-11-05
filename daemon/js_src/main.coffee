@@ -15,6 +15,7 @@ adjustZoom = ->
 
 currentState = null
 currentFilter = null
+sidebarOpen = false
 
 createMachine = (d, i) ->
   g = d3.select this
@@ -45,15 +46,8 @@ createMachine = (d, i) ->
 
 availableFilter = (d, i) -> d.state == 'AVAILABLE'
 
-updateFilter = ->
+updateHoists = ->
   matchingMachines = []
-
-  overlayOpacity = if currentFilter? then 0.5 else 0
-
-  d3.select('#overlay')
-    .transition()
-    .attr('opacity', overlayOpacity)
-
   if currentFilter?
     matchingMachines = (m for m in currentState when m.state is 'AVAILABLE')
 
@@ -66,6 +60,21 @@ updateFilter = ->
     .attr('xlink:href', (d) -> '#' + d.hostname)
 
   hoists.exit().remove()
+
+updateFilter = ->
+  overlayOpacity = if currentFilter? then 0.6 else 0
+
+  d3.select('#shade')
+    .transition()
+    .attr('opacity', overlayOpacity)
+    .each('start', ->
+      if currentFilter?
+        d3.select('#overlay').attr('visibility', 'visible')
+        updateHoists())
+    .each('end', ->
+      if !currentFilter?
+        d3.select('#overlay').attr('visibility', 'hidden')
+        updateHoists())
 
 updateMachines = ->
   d3.json '/labstate', (err, ls) ->
@@ -93,8 +102,11 @@ updateMachines = ->
             photo.transition().style('opacity', 0)
             title.text "#{d.hostname} - #{d.state.toLowerCase()}"
           else
+            photoUrl = 'img/' + (d.state.photo || 'anon.jpg')
+            # Work around weird Chrome photo jumping.
+            if photo.attr('xlink:href') != photoUrl
+              photo.attr('xlink:href', photoUrl)  
             photo
-              .attr('xlink:href', 'img/' + (d.state.photo || 'anon.jpg'))
               .transition()
               .delay(500)
               .style('opacity', 1)
@@ -155,3 +167,9 @@ d3.xml 'labmap.svg', 'image/svg+xml', (xml) ->
       else
         currentFilter = null
       updateFilter()
+
+    d3.select('#sidebar-toggle').on 'click', ->
+      d3.select('#sidebar')
+        .transition()
+        .style('right', if sidebarOpen then '-175px' else '0px')
+        .each 'end', -> sidebarOpen = !sidebarOpen

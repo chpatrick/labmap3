@@ -364,8 +364,8 @@
     <g
        id="computers" />
   </g>
-  <g>
-    <rect id="overlay" x="0" y="0" width="100%" height="100%" fill="black" opacity="0" />
+  <g id="overlay">
+    <rect id="shade" x="0" y="0" width="100%" height="100%" fill="black" opacity="0" />
     <g id="hoisted">
     </g>
   </g>

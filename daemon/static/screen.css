@@ -4,6 +4,7 @@ body {
   background-color: #788FA5;
   color: #FDFDFD;
   font-family: sans-serif;
+  overflow: hidden;
 }
 
 #labmapSVG {
@@ -29,17 +30,21 @@ h1 {
   position: absolute;
   top: 0;
   bottom: 0;
-  right: 0;
-  width: 180px;
+  right: -175px;
+  width: 200px;
   background-color: rgba(0, 0, 0, 0.4);
   padding: 10px;
   font-size: 12px;
 }
 
 #sidebar-toggle {
-  float: left;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
   font-size: 25px;
-  padding: 2px 3px 0 3px;
+  padding: 10px 15px 0 15px;
+  cursor: pointer;
 }
 
 #sidebar-content {
