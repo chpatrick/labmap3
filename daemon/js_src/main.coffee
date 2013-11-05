@@ -126,11 +126,11 @@ d3.xml 'labmap.svg', 'image/svg+xml', (xml) ->
 
   svg.call(zoom.on 'zoom', adjustZoom)
 
-  desiredSize = window.innerHeight * 0.8
+  desiredSize = window.innerHeight * 0.9
   scale = desiredSize / 750
 
   xShift = (window.innerWidth - desiredSize) / 2 * 0.95
-  yShift = (window.innerHeight - desiredSize) / 2
+  yShift = (window.innerHeight - desiredSize) / 2 * 1.3
 
   zoom.scale scale
   zoom.translate [xShift, yShift]
