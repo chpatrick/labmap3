@@ -34,6 +34,7 @@ executable labmap
     yaml,
     scotty,
     mtl,
-    wai-middleware-static
+    wai-middleware-static,
+    old-locale
   ghc-options: -O2 -threaded -Wall -fno-warn-unused-do-bind -with-rtsopts=-N
 

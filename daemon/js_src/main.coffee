@@ -99,6 +99,7 @@ updateMachines = ->
               .attr('visibility', 'visible')
               .transition()
               .attr('fill', color)
+              .style('opacity', 1)
             photo.transition().style('opacity', 0)
             title.text "#{d.hostname} - #{d.state.toLowerCase()}"
           else
@@ -109,8 +110,13 @@ updateMachines = ->
             photo
               .transition()
               .delay(500)
-              .style('opacity', 1)
+              .style('opacity', if d.state.lockTime? then 0.5 else 1)
               .each 'end', -> statusRect.attr('visibility', 'hidden')
+            if d.state.lockTime?
+              statusRect
+                .transition()
+                .delay(500)
+                .style('opacity', 0)
             title.text "#{d.hostname} - #{d.state.fullName} (#{d.state.username})"
 
     updateFilter()

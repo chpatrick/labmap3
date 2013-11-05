@@ -4,6 +4,7 @@ module Main where
 
 import Labmap.Common
 import Labmap.GetUser
+import Labmap.Lock
 import Labmap.Scanner
 import Labmap.Users
 import Labmap.Util
@@ -63,14 +64,6 @@ instance FromJSON LabmapConf where
         conf .: "usersCacheHours" <*>
         conf .: "port"
 
-userToJSON :: User -> Value
-userToJSON u = object
-    [ "username" .= username u
-    , "fullName" .= fullName u
-    , "photo" .= photo u
-    , "groups" .= groups u
-    ]
-
 findSelf :: IO FilePath
 findSelf = readSymbolicLink "/proc/self/exe"
 
@@ -91,6 +84,36 @@ getUserCommand = getUser >>= print
 
 type LabState = Either Text (M.Map Text Value)
 
+makeResult :: Cached Users -> ( Text, Maybe MachineState ) -> IO Value
+makeResult _ ( _, Nothing ) = return "UNKNOWN"
+makeResult _ ( _, Just Available ) = return "AVAILABLE"
+makeResult users ( m, Just (Occupied u) ) = do
+  m'ui <- M.lookup u <$> getCached users
+  
+  case m'ui of
+    Nothing -> return "UNKNOWN"
+    Just ui -> do
+      let resf = [ "username" .= u
+               , "fullName" .= fullName ui
+               , "photo" .= photo ui
+               , "groups" .= groups ui
+               ]
+      e'le <- lastEntryForMachine m
+      object <$> case e'le of
+        Left e
+          -> warningM "labmap" ("Failed to check lock status:" ++ e) >> return resf
+        Right le | lockUser le == u -> do
+          now@(ZonedTime _ tz) <- getZonedTime
+          let lt = ZonedTime (lockTime le) tz
+          let td = (zonedTimeToUTC now `diffUTCTime` zonedTimeToUTC lt) - fromIntegral (lockDuration le * 60)
+          return $ if td < 30 * 60
+            then resf ++
+            [ "lockTime" .= lt
+            , "lockDuration" .= lockDuration le
+            ]
+            else resf
+        _ -> return resf
+
 scanForever :: LabmapConf -> Cached Users -> MVar LabState -> IO ()
 scanForever LabmapConf{..} users labState = do
   resultChan <- newChan
@@ -106,14 +129,7 @@ scanForever LabmapConf{..} users labState = do
         infoM "labmap" "Woke up"
       Nothing -> return ()
     ( m, s ) <- readChan resultChan
-    s' <- case s of
-      Nothing -> return "UNKNOWN"
-      Just Available -> return "AVAILABLE"
-      Just (Occupied un) -> do
-        ui <- M.lookup un <$> getCached users
-        return $ case ui of
-          Nothing -> "UNKNOWN"
-          Just userInfo -> userToJSON userInfo
+    s' <- makeResult users ( m, s )
     debugM "labmap" (T.unpack m <> ": " <> show s)
     modifyMVar_ labState $ \ls -> return $ Right $ case ls of
       Left _ -> M.singleton m s'
