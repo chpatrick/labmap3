@@ -119,13 +119,16 @@ scanForever LabmapConf{..} users labState = do
   resultChan <- newChan
   self <- findSelf
   noticeM "labmap" "Starting scan."
-  scan sshOpts machines [ self, "getuser" ] resultChan scanThreads
+  runVar <- newMVar ()
+  scan sshOpts machines [ self, "getuser" ] runVar resultChan scanThreads
   forever $ do
     sleepTime openingHour closingHour >>= \case
       Just s -> do
-        infoM "labmap" ("Sleeping for " <> show s)
-        putMVar labState (Left "CLOSED")
-        threadDelay (round (s * 1000000))
+        let t = round (s * 1000000)
+        infoM "labmap" ("Sleeping for " ++ show t ++ " microseconds")
+        swapMVar labState (Left "CLOSED")
+        -- confiscate the runvar while we sleep, this will block the scanner threads
+        withMVar runVar $ const (threadDelay t)
         infoM "labmap" "Woke up"
       Nothing -> return ()
     ( m, s ) <- readChan resultChan

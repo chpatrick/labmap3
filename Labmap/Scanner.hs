@@ -32,13 +32,16 @@ scanMachine sshOpts cmd hostname = do
   ( exitCode, result, _ ) <- readProcessWithExitCode "ssh" args ""
   return (guard (exitCode == ExitSuccess) >> readMaybe result)
 
-scanner :: [ String ] -> [ String ] -> LazyChan Hostname -> Chan ( Text, Maybe MachineState ) -> IO ()
-scanner opts cmd work result = forever $ do
+scanner :: [ String ] -> [ String ] -> MVar () -> LazyChan Hostname -> Chan ( Text, Maybe MachineState ) -> IO ()
+scanner opts cmd runVar work result = forever $ do
+  debugM "labmap" "Getting work token..."
+  readMVar runVar -- get a work token - the main thread can withdraw this if the scanners should be paused
+  debugM "labmap" "Got work token."
   hostname <- readLazyChan work
   state <- scanMachine opts cmd hostname
   writeChan result ( T.pack hostname, state )
 
-scan :: [ String ] -> Machines -> [ String ] -> Chan ( Text, Maybe MachineState ) -> Int -> IO [ ThreadId ]
-scan opts machines cmd results threads = do
+scan :: [ String ] -> Machines -> [ String ] -> MVar () -> Chan ( Text, Maybe MachineState ) -> Int -> IO [ ThreadId ]
+scan opts machines cmd runVar results threads = do
   wq <- createWorkQueue machines
-  replicateM threads $ forkIO (scanner opts cmd wq results)
+  replicateM threads $ forkIO (scanner opts cmd runVar wq results)
