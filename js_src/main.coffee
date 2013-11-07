@@ -95,8 +95,7 @@ updateHoists = ->
   hoists.enter()
     .append('use')
     .attr('xlink:href', (d) -> '#' + d.hostname)
-    .on 'click', (d) ->
-      setTextFilter d.state.fullName
+    .on 'click', (d) -> setTextFilter d.state.fullName if d.state.fullName
 
   hoists.exit().remove()
 
