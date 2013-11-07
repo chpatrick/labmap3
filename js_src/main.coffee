@@ -254,8 +254,7 @@ d3.xml 'labmap.svg', 'image/svg+xml', (xml) ->
       .append('g')
       .each createMachine
   
-    # setInterval updateMachines, 1000
-    updateMachines()
+    setInterval updateMachines, 1000
 
     d3.select('#filter-available').on 'change', ->
       return if changingFilter
