@@ -35,7 +35,6 @@ createMachine = (d, i) ->
     .attr('height', photoHeight)
     .attr('clip-path', 'url(#photo-clip-path)')
     .attr('fill', unknownColor)
-    #.attr('fill', colorbrewer.Pastel2[7][machineGroups.indexOf(d.group)])
 
   g.append('image')
     .attr('class', 'user-photo')
@@ -46,10 +45,8 @@ createMachine = (d, i) ->
     .attr('height', photoHeight)
     .attr('clip-path', 'url(#photo-clip-path)')
     .style('opacity', 0)
-    .on 'click', (d) ->
-      # find the parent's datum for clones
-      datum = d || d3.select(@correspondingElement).datum()
-      setTextFilter datum.state.fullName
+    .style('display', 'none')
+    .on 'click', (d) -> setTextFilter d.state.fullName if d?
 
 availableFilter = (d, i) -> d.state == 'AVAILABLE'
 
@@ -77,6 +74,7 @@ updateTextFilter = ->
   changingFilter = false
 
 setTextFilter = (filterText) ->
+  toggleSidebar true
   if lastFilter == filterText
     lastFilter = null
     d3.select('#filter-box').property('value', '')
@@ -97,6 +95,8 @@ updateHoists = ->
   hoists.enter()
     .append('use')
     .attr('xlink:href', (d) -> '#' + d.hostname)
+    .on 'click', (d) ->
+      setTextFilter d.state.fullName
 
   hoists.exit().remove()
 
@@ -120,11 +120,11 @@ updateFilter = ->
     .attr('opacity', overlayOpacity)
     .each('start', ->
       if currentFilter?
-        d3.select('#overlay').attr('visibility', 'visible')
+        d3.select('#overlay').style('display', '')
         updateHoists())
     .each('end', ->
       if !currentFilter?
-        d3.select('#overlay').attr('visibility', 'hidden')
+        d3.select('#overlay').style('display', 'none')
         updateHoists())
 
   selectedUserEntries = []
@@ -148,11 +148,13 @@ updateMachine = (d, i) ->
   if d.state is 'AVAILABLE' or d.state is 'UNKNOWN'
     color = if d.state is 'AVAILABLE' then availableColor else unknownColor
     statusRect
-      .attr('visibility', 'visible')
+      .style('display', '')
       .transition()
       .attr('fill', color)
       .style('opacity', 1)
-    photo.transition().style('opacity', 0)
+    photo
+      .style('display', 'none')
+      .transition().style('opacity', 0)
     title.text "#{d.hostname} - #{d.state.toLowerCase()}"
   else
     photoUrl = 'img/' + (d.state.photo || 'anon.jpg')
@@ -160,10 +162,11 @@ updateMachine = (d, i) ->
     if photo.attr('xlink:href') != photoUrl
       photo.attr('xlink:href', photoUrl)  
     photo
+      .style('display', '')
       .transition()
       .delay(500)
       .style('opacity', if d.state.lockTime? then 0.5 else 1)
-      .each 'end', -> statusRect.attr('visibility', 'hidden')
+      .each 'end', -> statusRect.style('display', 'none')
     if d.state.lockTime?
       statusRect
         .transition()
@@ -200,6 +203,13 @@ updateMachines = ->
         .each (d, i) -> updateMachine.call this, { hostname: d.hostname, state: 'UNKNOWN' }, i
 
     updateFilter()
+
+toggleSidebar = (open) ->
+  if sidebarOpen != open
+    d3.select('#sidebar')
+      .transition()
+      .style('right', if sidebarOpen then '-175px' else '0px')
+      .each 'end', -> sidebarOpen = !sidebarOpen
 
 d3.xml 'labmap.svg', 'image/svg+xml', (xml) ->
   svg = d3.select('#map').select -> @appendChild xml.documentElement
@@ -267,7 +277,4 @@ d3.xml 'labmap.svg', 'image/svg+xml', (xml) ->
       .on('change', updateTextFilter)
 
     d3.select('#sidebar-toggle').on 'click', ->
-      d3.select('#sidebar')
-        .transition()
-        .style('right', if sidebarOpen then '-175px' else '0px')
-        .each 'end', -> sidebarOpen = !sidebarOpen
+      toggleSidebar !sidebarOpen
