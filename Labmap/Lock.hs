@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, LambdaCase #-}
 
-module Labmap.Lock(LockEntry(..), lastEntryForMachine) where
+module Labmap.Lock(LockEntry(..), lastEntryForMachine, parseLockEntry, screenLockDir) where
 
 import Control.Applicative
 import Control.Monad.Instances()

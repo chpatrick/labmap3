@@ -19,7 +19,7 @@ import Data.Monoid
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import qualified Data.Yaml as Yaml
 import Network.Wai.Middleware.Static
 import Options.Applicative
@@ -134,7 +134,7 @@ scanForever LabmapConf{..} users labState = do
     ( m, s ) <- readChan resultChan
     s' <- makeResult users ( m, s )
     debugM "labmap" (T.unpack m <> ": " <> show s)
-    modifyMVar_ labState $ \ls -> return $ Right $ case ls of
+    modifyMVar_ labState $ \ls -> return $ Right $! case ls of
       Left _ -> M.singleton m s'
       Right state -> M.insert m s' state
 

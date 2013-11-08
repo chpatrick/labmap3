@@ -4,6 +4,8 @@ photoHeight = 20
 unknownColor = '#D19D9D'
 availableColor = '#9DD1B5'
 
+lockMeanLog = 4.01311
+lockSdLog = 1.46509
 
 zoom = d3.behavior.zoom()
 
@@ -51,13 +53,21 @@ createMachine = (d, i) ->
 availableFilter = (d, i) -> d.state == 'AVAILABLE'
 
 textFilter = (filterString) ->
-  words = filterString.toLowerCase().split(' ')
+  words = []
+  groups = []
+  for w in filterString.toLowerCase().split(' ')
+    if w.substr(0, 6) == 'group:'
+      groups.push w.substr(6)
+    else
+      words.push w
   (d, i) ->
     return false unless d.state.fullName?
 
     lowerCaseName = d.state.fullName.toLowerCase()
     for w in words
       return false if lowerCaseName.indexOf(w) == -1
+    for g in groups
+      return false unless d.state.groupSet[g]
 
     return true
 
@@ -144,6 +154,7 @@ updateMachine = (d, i) ->
   statusRect = g.select 'rect'
   photo = g.select 'image'
   title = g.select 'title'
+
   if d.state is 'AVAILABLE' or d.state is 'UNKNOWN'
     color = if d.state is 'AVAILABLE' then availableColor else unknownColor
     statusRect
@@ -164,14 +175,45 @@ updateMachine = (d, i) ->
       .style('display', '')
       .transition()
       .delay(500)
-      .style('opacity', if d.state.lockTime? then 0.5 else 1)
+      .style('opacity', if d.state.lockProb? then 0.9 - d.state.lockProb * 0.6 else 1)
       .each 'end', -> statusRect.style('display', 'none')
     if d.state.lockTime?
       statusRect
         .transition()
         .delay(500)
         .style('opacity', 0)
-    title.text "#{d.hostname} - #{d.state.fullName} (#{d.state.username})"
+    titleText = "#{d.hostname} - #{d.state.fullName} (#{d.state.username})"
+    if d.state.lockProb
+      titleText += " - #{Math.floor(d.state.lockProb * 100)}% chance of AFK"
+    title.text titleText
+
+erf = (x) ->
+  # constants
+  a1 = 0.254829592
+  a2 = -0.284496736
+  a3 = 1.421413741
+  a4 = -1.453152027
+  a5 = 1.061405429
+  p = 0.3275911
+  
+  # Save the sign of x
+  sign = 1
+  sign = -1  if x < 0
+  x = Math.abs(x)
+  
+  # A&S formula 7.1.26
+  t = 1.0 / (1.0 + p * x)
+  y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x)
+  sign * y
+
+erfc = (x) -> 1 - erf(x)
+
+logNormalCdf = (x, meanlog, sdlog) -> 1 / 2.0 * erfc(-(Math.log(x) - meanlog)/(sdlog * Math.sqrt(2)))
+
+logNormalCcdf = (x, meanlog, sdlog) -> 1 - logNormalCdf(x, meanlog, sdlog)
+
+lockedProbability = (lockTime, lockDuration) ->
+  logNormalCcdf(lockTime, lockMeanLog, lockSdLog) / logNormalCcdf(lockDuration, lockMeanLog, lockSdLog)
 
 updateMachines = ->
   d3.json '/labstate', (err, ls) ->
@@ -184,8 +226,14 @@ updateMachines = ->
       currentState = []
 
       for hostname, state of ls
+        if state.lockTime
+          lockTime = (new Date().getTime() - new Date(state.lockTime).getTime()) / 1000 / 60
+          state.lockProb = lockedProbability lockTime, state.lockDuration
+
         if state.username
           userEntries.push state
+          state.groupSet = {}
+          state.groupSet[group] = true for group in state.groups
 
         currentState.push
           hostname: hostname
