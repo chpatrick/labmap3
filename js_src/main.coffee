@@ -213,7 +213,12 @@ logNormalCdf = (x, meanlog, sdlog) -> 1 / 2.0 * erfc(-(Math.log(x) - meanlog)/(s
 logNormalCcdf = (x, meanlog, sdlog) -> 1 - logNormalCdf(x, meanlog, sdlog)
 
 lockedProbability = (lockTime, lockDuration) ->
-  logNormalCcdf(lockTime, lockMeanLog, lockSdLog) / logNormalCcdf(lockDuration, lockMeanLog, lockSdLog)
+  rawProb = logNormalCcdf(lockTime, lockMeanLog, lockSdLog) / logNormalCcdf(lockDuration, lockMeanLog, lockSdLog)
+  if rawProb > 0.95
+    rawProb
+  else
+    # complete hack, improves prediction accuracy
+    rawProb - Math.abs (0.9 - rawProb) + 0.05
 
 updateMachines = ->
   d3.json '/labstate', (err, ls) ->
