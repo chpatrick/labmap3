@@ -15,6 +15,7 @@ adjustZoom = ->
   d3.select('#viewport').attr('transform', transform)
   d3.select('#hoisted').attr('transform', transform)
 
+kiosk = false
 currentState = null
 currentFilter = null
 sidebarOpen = false
@@ -124,8 +125,13 @@ updateUserList = (userList, userEntries) ->
 updateFilter = ->
   overlayOpacity = if currentFilter? then 0.6 else 0
 
-  d3.select('#shade')
+  shadeTransition = d3.select('#shade')
     .transition()
+
+  if kiosk
+    shadeTransition.delay(2000).duration(1000)
+
+  shadeTransition
     .attr('opacity', overlayOpacity)
     .each('start', ->
       if currentFilter?
@@ -263,69 +269,81 @@ toggleSidebar = (open) ->
       .style('right', if sidebarOpen then '-175px' else '0px')
       .each 'end', -> sidebarOpen = !sidebarOpen
 
-d3.xml 'labmap.svg', 'image/svg+xml', (xml) ->
-  svg = d3.select('#map').select -> @appendChild xml.documentElement
+d3.select(window).on 'load', ->
+  kiosk = window.location.hash is '#kiosk'
+  if kiosk
+    d3.select('#logo').style 'display', 'none'
+    d3.select('#sidebar').style 'display', 'none'
+    d3.select('#credit').style 'display', 'none'
 
-  svg.call(zoom.on 'zoom', adjustZoom)
+  d3.xml 'labmap.svg', 'image/svg+xml', (xml) ->
+    svg = d3.select('#map').select -> @appendChild xml.documentElement
 
-  desiredSize = window.innerHeight * 0.9
-  scale = desiredSize / 750
+    svg.call(zoom.on 'zoom', adjustZoom)
 
-  xShift = (window.innerWidth - desiredSize) / 2 * 0.95
-  yShift = (window.innerHeight - desiredSize) / 2 * 1.3
+    desiredSize = window.innerHeight * 0.9
+    scale = desiredSize / 750
 
-  zoom.scale scale
-  zoom.translate [xShift, yShift]
-  zoom.event svg
+    xShift = (window.innerWidth - desiredSize) / 2 * 0.95
+    yShift = (window.innerHeight - desiredSize) / 2 * 1.3
 
-  d3.json 'layout.json', (err, layout) ->
-    machines = []
+    zoom.scale scale
+    zoom.translate [xShift, yShift]
+    zoom.event svg
 
-    for spline,descs of layout
-      spline = d3.select('#' + spline).node()
-      splineLen = spline.getTotalLength()
+    d3.json 'layout.json', (err, layout) ->
+      machines = []
 
-      splineMachines = []      
-      for desc in descs
-        for i in [desc['from'] .. desc['to']]
-          num = i + ''
-          num = '0' + num if num.length < 2
-          splineMachines.push
-            group: desc['group']
-            hostname: desc['group'] + num
+      for spline,descs of layout
+        spline = d3.select('#' + spline).node()
+        splineLen = spline.getTotalLength()
 
-      for machine, i in splineMachines
-        dist = if splineMachines.length is 1 then 0 else splineLen * i / (splineMachines.length - 1)
-        machine.pos = spline.getPointAtLength dist
+        splineMachines = []      
+        for desc in descs
+          for i in [desc['from'] .. desc['to']]
+            num = i + ''
+            num = '0' + num if num.length < 2
+            splineMachines.push
+              group: desc['group']
+              hostname: desc['group'] + num
 
-      machines = machines.concat splineMachines
+        for machine, i in splineMachines
+          dist = if splineMachines.length is 1 then 0 else splineLen * i / (splineMachines.length - 1)
+          machine.pos = spline.getPointAtLength dist
 
-    d3.select('#computers')
-      .selectAll('g')
-      .data(machines, (d) -> d.hostname)
-      .enter()
-      .append('g')
-      .each createMachine
-  
-    setInterval updateMachines, 1000
+        machines = machines.concat splineMachines
 
-    d3.select('#filter-available').on 'change', ->
-      return if changingFilter
-
-      changingFilter = true
-
-      filterText = d3.select('#filter-box').property('value', '')
-
-      if d3.select(this).property('checked')
+      d3.select('#computers')
+        .selectAll('g')
+        .data(machines, (d) -> d.hostname)
+        .enter()
+        .append('g')
+        .each createMachine
+    
+      if kiosk
         currentFilter = availableFilter
+        updateMachines()
+
       else
-        currentFilter = null
-      updateFilter()
-      changingFilter = false
+        setInterval updateMachines, 1000
 
-    d3.select('#filter-box')
-      .on('keyup', updateTextFilter)
-      .on('change', updateTextFilter)
+      d3.select('#filter-available').on 'change', ->
+        return if changingFilter
 
-    d3.select('#sidebar-toggle').on 'click', ->
-      toggleSidebar !sidebarOpen
+        changingFilter = true
+
+        filterText = d3.select('#filter-box').property('value', '')
+
+        if d3.select(this).property('checked')
+          currentFilter = availableFilter
+        else
+          currentFilter = null
+        updateFilter()
+        changingFilter = false
+
+      d3.select('#filter-box')
+        .on('keyup', updateTextFilter)
+        .on('change', updateTextFilter)
+
+      d3.select('#sidebar-toggle').on 'click', ->
+        toggleSidebar !sidebarOpen
