@@ -24,7 +24,6 @@ import qualified Data.Map.Strict as M
 import Network.Wai.Middleware.Static
 import Options.Applicative
 import System.Log.Logger
-import System.Posix.Files
 import Web.Scotty as S
 
 opts :: ParserInfo (IO ())
@@ -38,9 +37,6 @@ opts = info (helper <*> args) (fullDesc <> header "Labmap 3.0")
 
 main :: IO ()
 main = join $ execParser opts
-
-findSelf :: IO FilePath
-findSelf = readSymbolicLink "/proc/self/exe"
 
 sleepTime :: Int -> Int -> IO (Maybe NominalDiffTime)
 sleepTime open close = do
@@ -92,10 +88,9 @@ makeResult users ( m, Just (Occupied u) ) = do
 scanForever :: LabmapConf -> Cached Users -> MVar LabState -> IO ()
 scanForever LabmapConf{..} users labState = do
   resultChan <- newChan
-  self <- findSelf
   noticeM "labmap" "Starting scan."
   runVar <- newMVar ()
-  scan sshOpts machines [ self, "getuser" ] runVar resultChan scanThreads
+  scan sshOpts machines runVar resultChan scanThreads
   forever $ do
     sleepTime openingHour closingHour >>= \case
       Just s -> do
