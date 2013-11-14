@@ -16,13 +16,11 @@ import Control.DeepSeq
 import Control.Monad
 import Control.Monad.Trans
 import Data.Aeson
-import qualified Data.HashMap.Strict as H
 import Data.Monoid
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time
 import qualified Data.Map.Strict as M
-import qualified Data.Yaml as Yaml
 import Network.Wai.Middleware.Static
 import Options.Applicative
 import System.Log.Logger
@@ -40,7 +38,6 @@ opts = info (helper <*> args) (fullDesc <> header "Labmap 3.0")
 
 main :: IO ()
 main = join $ execParser opts
-
 
 findSelf :: IO FilePath
 findSelf = readSymbolicLink "/proc/self/exe"
@@ -134,7 +131,7 @@ serve port labState = do
 
 serverCommand :: String -> IO ()
 serverCommand configFile = do
-  m'conf <- Yaml.decodeFile configFile
+  m'conf <- loadConfig configFile
   case m'conf of
     Nothing -> putStrLn "Could not read configuration file"
     Just conf@LabmapConf{..} -> do
