@@ -4,7 +4,6 @@ module Main where
 
 import Labmap.Common
 import Labmap.Conf
-import Labmap.GetUser
 import Labmap.Lock
 import Labmap.Scanner
 import Labmap.Users
@@ -29,11 +28,8 @@ import Web.Scotty as S
 opts :: ParserInfo (IO ())
 opts = info (helper <*> args) (fullDesc <> header "Labmap 3.0")
   where
-    args = subparser $ 
-      command "getuser" (info (pure getUserCommand) idm) <>
-      command "server" (info (serverCommand <$>
-        strOption (short 'c' <> value "labmap.conf" <> help "The configuration file to use."))
-        (progDesc "Start the Labmap web server.") )
+    args = serverCommand <$>
+        strOption (short 'c' <> value "labmap.conf" <> help "The configuration file to use.")
 
 main :: IO ()
 main = join $ execParser opts
@@ -49,9 +45,6 @@ sleepTime open close = do
     let wakeTime = ZonedTime (LocalTime wakeDay (TimeOfDay open 0 0)) tz
     return $ zonedTimeToUTC wakeTime `diffUTCTime` zonedTimeToUTC now
 
-
-getUserCommand :: IO ()
-getUserCommand = getUser >>= print
 
 type LabState = Either Text (M.Map Text Value)
 
