@@ -3,6 +3,7 @@
 module Main where
 
 import Labmap.Common
+import Labmap.Conf
 import Labmap.GetUser
 import Labmap.Lock
 import Labmap.Scanner
@@ -40,30 +41,6 @@ opts = info (helper <*> args) (fullDesc <> header "Labmap 3.0")
 main :: IO ()
 main = join $ execParser opts
 
-data LabmapConf = LabmapConf
-  { sshOpts :: [ String ]
-  , machines :: Machines
-  , outputFile :: FilePath
-  , openingHour :: Int
-  , closingHour :: Int
-  , logLevel :: Priority
-  , scanThreads :: Int
-  , usersCacheHours :: Int
-  , port :: Int
-  } deriving (Read, Show)
-
-instance FromJSON LabmapConf where
-  parseJSON
-    = withObject "LabmapConf" $ \conf -> LabmapConf <$>
-        (words <$> (conf .: "sshOpts")) <*>
-        (H.toList <$> (conf .: "machines")) <*>
-        conf .: "outputFile" <*>
-        conf .: "openingHour" <*>
-        conf .: "closingHour" <*>
-        (read <$> (conf .: "logLevel")) <*>
-        conf .: "scanThreads" <*>
-        conf .: "usersCacheHours" <*>
-        conf .: "port"
 
 findSelf :: IO FilePath
 findSelf = readSymbolicLink "/proc/self/exe"
