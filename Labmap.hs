@@ -11,6 +11,7 @@ import Labmap.Util
 
 import Control.Applicative
 import Control.Concurrent
+import Control.DeepSeq
 import Control.Monad
 import Control.Monad.Trans
 import Data.Aeson
@@ -134,7 +135,7 @@ scanForever LabmapConf{..} users labState = do
     ( m, s ) <- readChan resultChan
     s' <- makeResult users ( m, s )
     debugM "labmap" (T.unpack m <> ": " <> show s)
-    modifyMVar_ labState $ \ls -> return $ Right $! case ls of
+    modifyMVar_ labState $ \ls -> return $!! Right $ case ls of
       Left _ -> M.singleton m s'
       Right state -> M.insert m s' state
 

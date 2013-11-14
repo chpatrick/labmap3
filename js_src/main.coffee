@@ -22,6 +22,13 @@ sidebarOpen = false
 changingFilter = false
 lastFilter = null
 
+onClickPhoto = (d) ->
+  if d?
+    if d3.event.ctrlKey
+      window.open "labmap://#{d.hostname}.doc.ic.ac.uk"
+    else if d.state.fullName
+      setTextFilter d.state.fullName
+
 createMachine = (d, i) ->
   g = d3.select this
   x = d.pos.x - photoWidth / 2
@@ -49,7 +56,7 @@ createMachine = (d, i) ->
     .attr('clip-path', 'url(#photo-clip-path)')
     .style('opacity', 0)
     .style('display', 'none')
-    .on 'click', (d) -> setTextFilter d.state.fullName if d?
+    .on 'click', onClickPhoto
 
 availableFilter = (d, i) -> d.state == 'AVAILABLE'
 
@@ -106,7 +113,7 @@ updateHoists = ->
   hoists.enter()
     .append('use')
     .attr('xlink:href', (d) -> '#' + d.hostname)
-    .on 'click', (d) -> setTextFilter d.state.fullName if d.state.fullName
+    .on 'click', onClickPhoto
 
   hoists.exit().remove()
 
