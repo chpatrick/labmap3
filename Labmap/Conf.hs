@@ -21,7 +21,6 @@ data LabmapConf = LabmapConf
   , scanThreads :: Int
   , usersCacheHours :: Int
   , port :: Int
-  , restrictLocal :: Bool
   } deriving (Read, Show)
 
 instance FromJSON LabmapConf where
@@ -35,8 +34,7 @@ instance FromJSON LabmapConf where
 	    (conf .: "logLevel" >>= parseRead) <*>
 	    conf .: "scanThreads" <*>
 	    conf .: "usersCacheHours" <*>
-	    conf .: "port" <*>
-	    conf .: "restrictLocal"
+	    conf .: "port"
 
 parseRead :: Read r => String -> Yaml.Parser r
 parseRead t = case readMaybe t of
