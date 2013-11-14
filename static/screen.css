@@ -105,9 +105,13 @@ a:hover {
   cursor: pointer;
 }
 
-#credit {
+#credit, #kiosk-link {
   position: absolute;
   left: 10px;
   bottom: 10px;
   font-size: 12px;
+}
+
+#kiosk-link-domain {
+  color: #AAA;
 }

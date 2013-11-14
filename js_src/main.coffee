@@ -3,6 +3,7 @@ photoHeight = 20
 
 unknownColor = '#D19D9D'
 availableColor = '#9DD1B5'
+anonColor = '#9DBBD1'
 
 lockMeanLog = 4.01311
 lockSdLog = 1.46509
@@ -136,7 +137,7 @@ updateFilter = ->
     .transition()
 
   if kiosk
-    shadeTransition.delay(2000).duration(1000)
+    shadeTransition.delay(1000).duration(1000)
 
   shadeTransition
     .attr('opacity', overlayOpacity)
@@ -168,37 +169,53 @@ updateMachine = (d, i) ->
   photo = g.select 'image'
   title = g.select 'title'
 
-  if d.state is 'AVAILABLE' or d.state is 'UNKNOWN'
-    color = if d.state is 'AVAILABLE' then availableColor else unknownColor
-    statusRect
-      .style('display', '')
-      .transition()
-      .attr('fill', color)
-      .style('opacity', 1)
-    photo
-      .style('display', 'none')
-      .transition().style('opacity', 0)
-    title.text "#{d.hostname} - #{d.state.toLowerCase()}"
-  else
-    photoUrl = 'img/' + (d.state.photo || 'anon.jpg')
-    # Work around weird Chrome photo jumping.
-    if photo.attr('xlink:href') != photoUrl
-      photo.attr('xlink:href', photoUrl)  
-    photo
-      .style('display', '')
-      .transition()
-      .delay(500)
-      .style('opacity', if d.state.lockProb? then 0.9 - d.state.lockProb * 0.6 else 1)
-      .each 'end', -> statusRect.style('display', 'none')
-    if d.state.lockTime?
+  switch d.state
+    when 'AVAILABLE', 'UNKNOWN'
+      color = if d.state is 'AVAILABLE' then availableColor else unknownColor
       statusRect
+        .style('display', '')
         .transition()
-        .delay(500)
-        .style('opacity', 0)
-    titleText = "#{d.hostname} - #{d.state.fullName} (#{d.state.username})"
-    if d.state.lockProb
-      titleText += " - #{Math.floor(d.state.lockProb * 100)}% chance of AFK"
-    title.text titleText
+        .attr('fill', color)
+        .style('opacity', 1)
+      photo
+        .style('display', 'none')
+        .transition().style('opacity', 0)
+      title.text "#{d.hostname} - #{d.state.toLowerCase()}"
+    else
+      titleText = "#{d.hostname} - #{d.state.fullName} (#{d.state.username})"
+      if d.state.lockProb
+        titleText += " - #{Math.floor(d.state.lockProb * 100)}% chance of AFK"
+      title.text titleText
+
+      lockOpacity = if d.state.lockProb? then 0.9 - d.state.lockProb * 0.6 else 1
+
+      if kiosk || !d.state.photo?
+        statusRect
+          .style('display', '')
+          .transition()
+          .attr('fill', anonColor)
+          .style('opacity', lockOpacity)
+        photo
+          .style('display', 'none')
+          .transition().style('opacity', 0)
+      else
+        photoUrl = 'img/' + d.state.photo if d.state.photo
+
+        # Work around weird Chrome photo jumping.
+        if photoUrl && photo.attr('xlink:href') != photoUrl
+          photo.attr('xlink:href', photoUrl)
+
+        photo
+          .style('display', '')
+          .transition()
+          .delay(500)
+          .style('opacity', lockOpacity)
+          .each 'end', -> statusRect.style('display', 'none')
+        if d.state.lockTime?
+          statusRect
+            .transition()
+            .delay(500)
+            .style('opacity', 0)
 
 erf = (x) ->
   # constants
@@ -275,6 +292,9 @@ toggleSidebar = (open) ->
       .transition()
       .style('right', if sidebarOpen then '-175px' else '0px')
       .each 'end', -> sidebarOpen = !sidebarOpen
+  unless open
+    currentFilter = null
+    updateFilter()
 
 d3.select(window).on 'load', ->
   kiosk = window.location.hash is '#kiosk'
@@ -282,6 +302,7 @@ d3.select(window).on 'load', ->
     d3.select('#logo').style 'display', 'none'
     d3.select('#sidebar').style 'display', 'none'
     d3.select('#credit').style 'display', 'none'
+    d3.select('#kiosk-link').style 'display', ''
 
   d3.xml 'labmap.svg', 'image/svg+xml', (xml) ->
     svg = d3.select('#map').select -> @appendChild xml.documentElement
