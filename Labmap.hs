@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, MultiWayIf, LambdaCase, RecordWildCards #-}
+{-# LANGUAGE OverloadedStrings, MultiWayIf, LambdaCase, RecordWildCards, TupleSections #-}
 
 module Main where
 
@@ -15,11 +15,13 @@ import Control.DeepSeq
 import Control.Monad
 import Control.Monad.Trans
 import Data.Aeson
+import Data.Maybe
 import Data.Monoid
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time
 import qualified Data.Map.Strict as M
+import Network.HTTP.Types.Status
 import Network.Wai.Middleware.Static
 import Options.Applicative
 import System.Log.Logger
@@ -48,13 +50,13 @@ sleepTime open close = do
 
 type LabState = Either Text (M.Map Text Value)
 
-makeResult :: Cached Users -> ( Text, Maybe MachineState ) -> IO Value
+makeResult :: Cached ( Users, GroupCounts ) -> ( Text, Maybe MachineState ) -> IO Value
 makeResult _ ( _, Nothing ) = return "UNKNOWN"
 makeResult _ ( _, Just Available ) = return "AVAILABLE"
-makeResult users ( m, Just (Occupied u) ) = do
-  m'ui <- M.lookup u <$> getCached users
+makeResult ugc ( m, Just (Occupied u) ) = do
+  ( users, _ ) <- getCached ugc
   
-  case m'ui of
+  case M.lookup u users of
     Nothing -> return "UNKNOWN"
     Just ui -> do
       let resf = [ "username" .= u
@@ -78,8 +80,8 @@ makeResult users ( m, Just (Occupied u) ) = do
             else resf
         _ -> return resf
 
-scanForever :: LabmapConf -> Cached Users -> MVar LabState -> IO ()
-scanForever LabmapConf{..} users labState = do
+scanForever :: LabmapConf -> Cached ( Users, GroupCounts ) -> MVar LabState -> IO ()
+scanForever LabmapConf{..} ugc labState = do
   resultChan <- newChan
   noticeM "labmap" "Starting scan."
   runVar <- newMVar ()
@@ -95,14 +97,14 @@ scanForever LabmapConf{..} users labState = do
         infoM "labmap" "Woke up"
       Nothing -> return ()
     ( m, s ) <- readChan resultChan
-    s' <- makeResult users ( m, s )
+    s' <- makeResult ugc ( m, s )
     debugM "labmap" (T.unpack m <> ": " <> show s)
     modifyMVar_ labState $ \ls -> return $!! Right $ case ls of
       Left _ -> M.singleton m s'
       Right state -> M.insert m s' state
 
-serve :: Int -> MVar LabState -> IO ()
-serve port labState = do
+serve :: Int -> MVar LabState -> Cached ( Users, GroupCounts ) -> IO ()
+serve port labState ugc = do
   noticeM "labmap" "Starting server."
   scotty port $ do
     middleware $ staticPolicy (noDots >-> addBase "static")
@@ -117,6 +119,16 @@ serve port labState = do
         Left m -> object ["UNAVAILABLE" .= m]
         Right state -> toJSON state
 
+    get "/mygroups" $ do
+      let username = "pc2210"
+      ( users, groupCounts ) <- liftIO (getCached ugc)
+      
+      case M.lookup username users of
+        Nothing -> do
+          liftIO $ warningM "labmap" ("/mygroups: unknown user " ++ T.unpack username)
+          status status500
+        Just user -> S.json $ M.fromList $ mapMaybe (\g -> (g,) <$> M.lookup g groupCounts ) (groups user)
+
 serverCommand :: String -> IO ()
 serverCommand configFile = do
   m'conf <- loadConfig configFile
@@ -124,7 +136,7 @@ serverCommand configFile = do
     Nothing -> putStrLn "Could not read configuration file"
     Just conf@LabmapConf{..} -> do
       updateGlobalLogger "labmap" (setLevel logLevel)
-      users <- cache (hours usersCacheHours) getAllUsers
+      ugc <- cache (hours usersCacheHours) getUsersAndGroupCounts
       labState <- newMVar (Right $ M.empty)
-      forkIO $ scanForever conf users labState
-      serve port labState
+      forkIO $ scanForever conf ugc labState
+      serve port labState ugc

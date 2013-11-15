@@ -36,6 +36,7 @@ executable labmap
     mtl,
     wai-middleware-static,
     old-locale,
-    deepseq
+    deepseq,
+    http-types
   ghc-options: -O2 -threaded -Wall -fno-warn-unused-do-bind -with-rtsopts=-N
 

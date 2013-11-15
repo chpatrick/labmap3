@@ -3,9 +3,11 @@
 module Labmap.Util
   ( LazyChan, readLazyChan
   , Cached(), cache, getCached, seconds, minutes, hours
+  , invert
   ) where
 
 import Control.Concurrent.MVar
+import qualified Data.Map as M
 import Data.Time
 
 type LazyChan a = MVar [ a ]
@@ -54,3 +56,6 @@ minutes = seconds . (*60)
 
 hours :: Int -> NominalDiffTime
 hours = minutes . (*60)
+
+invert :: ( Ord k, Ord v) => M.Map k [ v ] -> M.Map v [ k ]
+invert m = M.fromListWith (++) [ ( v, [ k ] ) | ( k, vs ) <- M.assocs m, v <- vs ]
