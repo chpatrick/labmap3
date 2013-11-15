@@ -19,6 +19,7 @@ import Data.Maybe
 import Data.Monoid
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
 import Data.Time
 import qualified Data.Map.Strict as M
 import Network.HTTP.Types.Status
@@ -120,14 +121,19 @@ serve port labState ugc = do
         Right state -> toJSON state
 
     get "/mygroups" $ do
-      let username = "pc2210"
-      ( users, groupCounts ) <- liftIO (getCached ugc)
-      
-      case M.lookup username users of
+      m'username <- reqHeader "X-Request-User"
+      case m'username of
         Nothing -> do
-          liftIO $ warningM "labmap" ("/mygroups: unknown user " ++ T.unpack username)
-          status status500
-        Just user -> S.json $ M.fromList $ mapMaybe (\g -> (g,) <$> M.lookup g groupCounts ) (groups user)
+          liftIO $ warningM "labmap" ("/mygroups: missing X-Request-User")
+          status status400
+        Just username -> do
+          ( users, groupCounts ) <- liftIO (getCached ugc)
+          case M.lookup (TL.toStrict username) users of
+            Nothing -> do
+              liftIO $ warningM "labmap" ("/mygroups: unknown user " ++ TL.unpack username)
+              status status500
+            Just user -> do
+              S.json $ M.fromList $ mapMaybe (\g -> (g,) <$> M.lookup g groupCounts ) (groups user)
 
 serverCommand :: String -> IO ()
 serverCommand configFile = do

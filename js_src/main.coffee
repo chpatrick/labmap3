@@ -17,11 +17,28 @@ adjustZoom = ->
   d3.select('#hoisted').attr('transform', transform)
 
 kiosk = false
+myGroups = {}
 currentState = null
 currentFilter = null
 sidebarOpen = false
 changingFilter = false
 lastFilter = null
+
+desc = (attr) ->
+  attr.desc = true
+  attr
+
+comparing = (attrs) -> (x, y) ->
+  for attr in attrs
+    c = if attr.desc then -1 else 1
+
+    ax = attr(x)
+    ay = attr(y)
+    if ax < ay
+      return -c
+    else if ax > ay
+      return c
+  0
 
 onClickPhoto = (d) ->
   if d?
@@ -120,15 +137,19 @@ updateHoists = ->
 
 updateUserList = (userList, userEntries) ->
   elements = userList.selectAll('li')
-    .data(userEntries, (d) -> d.username)
+    .data(userEntries)
 
   elements.enter()
     .append('li')
-    .text((d) -> d.fullName)
     .on 'click', (d) -> setTextFilter d.fullName
+
+  elements
+    .text((d) -> d.fullName)
 
   elements.exit()
     .remove()
+
+userListOrder = comparing [ desc((e) -> e.proximity), (e) -> e.fullName ]
 
 updateFilter = ->
   overlayOpacity = if currentFilter? then 0.6 else 0
@@ -159,6 +180,9 @@ updateFilter = ->
         selectedUserEntries.push entry.state
       else
         unselectedUserEntries.push entry.state
+
+  selectedUserEntries.sort(userListOrder)
+  unselectedUserEntries.sort(userListOrder)
 
   updateUserList d3.select('#selected-user-list'), selectedUserEntries
   updateUserList d3.select('#unselected-user-list'), unselectedUserEntries
@@ -270,6 +294,9 @@ updateMachines = ->
           state.groupSet = {}
           state.groupSet[group] = true for group in state.groups
 
+          state.proximity = 0
+          state.proximity += 1 / size for group, size of myGroups when state.groupSet[group]
+
         currentState.push
           hostname: hostname
           state: state
@@ -296,14 +323,7 @@ toggleSidebar = (open) ->
     currentFilter = null
     updateFilter()
 
-d3.select(window).on 'load', ->
-  kiosk = window.location.hash is '#kiosk'
-  if kiosk
-    d3.select('#logo').style 'display', 'none'
-    d3.select('#sidebar').style 'display', 'none'
-    d3.select('#credit').style 'display', 'none'
-    d3.select('#kiosk-link').style 'display', ''
-
+loadMap = (callback) ->
   d3.xml 'labmap.svg', 'image/svg+xml', (xml) ->
     svg = d3.select('#map').select -> @appendChild xml.documentElement
 
@@ -319,59 +339,85 @@ d3.select(window).on 'load', ->
     zoom.translate [xShift, yShift]
     zoom.event svg
 
-    d3.json 'layout.json', (err, layout) ->
-      machines = []
+    callback()
 
-      for spline,descs of layout
-        spline = d3.select('#' + spline).node()
-        splineLen = spline.getTotalLength()
+loadGroups = (callback) ->
+  d3.xhr('/mygroups')
+    .header('X-Request-User', 'pc2210') # TODO: remove when proxying is setup
+    .responseType('text')
+    .get (err, response) ->
+      myGroups = JSON.parse(response.responseText)
+      callback()
 
-        splineMachines = []      
-        for desc in descs
-          for i in [desc['from'] .. desc['to']]
-            num = i + ''
-            num = '0' + num if num.length < 2
-            splineMachines.push
-              group: desc['group']
-              hostname: desc['group'] + num
+createMachines = (callback) ->
+  d3.json 'layout.json', (err, layout) ->
+    machines = []
 
-        for machine, i in splineMachines
-          dist = if splineMachines.length is 1 then 0 else splineLen * i / (splineMachines.length - 1)
-          machine.pos = spline.getPointAtLength dist
+    for spline,descs of layout
+      spline = d3.select('#' + spline).node()
+      splineLen = spline.getTotalLength()
 
-        machines = machines.concat splineMachines
+      splineMachines = []      
+      for desc in descs
+        for i in [desc['from'] .. desc['to']]
+          num = i + ''
+          num = '0' + num if num.length < 2
+          splineMachines.push
+            group: desc['group']
+            hostname: desc['group'] + num
 
-      d3.select('#computers')
-        .selectAll('g')
-        .data(machines, (d) -> d.hostname)
-        .enter()
-        .append('g')
-        .each createMachine
-    
+      for machine, i in splineMachines
+        dist = if splineMachines.length is 1 then 0 else splineLen * i / (splineMachines.length - 1)
+        machine.pos = spline.getPointAtLength dist
+
+      machines = machines.concat splineMachines
+
+    d3.select('#computers')
+      .selectAll('g')
+      .data(machines, (d) -> d.hostname)
+      .enter()
+      .append('g')
+      .each createMachine
+
+    callback()
+
+initFilter = ->  
+  d3.select('#filter-available').on 'change', ->
+    return if changingFilter
+
+    changingFilter = true
+
+    filterText = d3.select('#filter-box').property('value', '')
+
+    if d3.select(this).property('checked')
+      currentFilter = availableFilter
+    else
+      currentFilter = null
+    updateFilter()
+    changingFilter = false
+
+  d3.select('#filter-box')
+    .on('keyup', updateTextFilter)
+    .on('change', updateTextFilter)
+
+  d3.select('#sidebar-toggle').on 'click', ->
+    toggleSidebar !sidebarOpen
+
+d3.select(window).on 'load', ->
+  kiosk = window.location.hash is '#kiosk'
+  if kiosk
+    d3.select('#logo').style 'display', 'none'
+    d3.select('#sidebar').style 'display', 'none'
+    d3.select('#credit').style 'display', 'none'
+    d3.select('#kiosk-link').style 'display', ''
+
+  loadMap ->
+    createMachines ->
+      initFilter()
+
       if kiosk
         currentFilter = availableFilter
         updateMachines()
-
       else
-        setInterval updateMachines, 1000
-
-      d3.select('#filter-available').on 'change', ->
-        return if changingFilter
-
-        changingFilter = true
-
-        filterText = d3.select('#filter-box').property('value', '')
-
-        if d3.select(this).property('checked')
-          currentFilter = availableFilter
-        else
-          currentFilter = null
-        updateFilter()
-        changingFilter = false
-
-      d3.select('#filter-box')
-        .on('keyup', updateTextFilter)
-        .on('change', updateTextFilter)
-
-      d3.select('#sidebar-toggle').on 'click', ->
-        toggleSidebar !sidebarOpen
+        loadGroups ->
+          setInterval updateMachines, 1000
