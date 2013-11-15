@@ -38,7 +38,7 @@ comparing = (attrs) -> (x, y) ->
       return -c
     else if ax > ay
       return c
-  0
+  return 0
 
 onClickPhoto = (d) ->
   if d?
@@ -319,9 +319,6 @@ toggleSidebar = (open) ->
       .transition()
       .style('right', if sidebarOpen then '-175px' else '0px')
       .each 'end', -> sidebarOpen = !sidebarOpen
-  unless open
-    currentFilter = null
-    updateFilter()
 
 loadMap = (callback) ->
   d3.xml 'labmap.svg', 'image/svg+xml', (xml) ->
@@ -402,6 +399,8 @@ initFilter = ->
     .on('change', updateTextFilter)
 
   d3.select('#sidebar-toggle').on 'click', ->
+    if sidebarOpen
+      setTextFilter('')
     toggleSidebar !sidebarOpen
 
 d3.select(window).on 'load', ->
