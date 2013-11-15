@@ -12,3 +12,4 @@ Features
 * Statistical AFK prediction.
 * Filtering by computer availability, name or group (for example, enter group:doc-ug2 to match second years).
 * Kiosk mode without logo or sidebar, automatically turns on availability filter (add #kiosk hashpart to use).
+* User list sorted by group proximity (`sum . map (\g -> 1 / groupSize g) $ intersect (groups me) (groups other)`).
