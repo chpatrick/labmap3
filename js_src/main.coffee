@@ -332,7 +332,7 @@ loadMap = (callback) ->
     desiredSize = window.innerHeight * 0.9
     scale = desiredSize / 750
 
-    xShift = (window.innerWidth - desiredSize) / 2 * 0.95
+    xShift = (window.innerWidth - desiredSize) / 2 * 0.9
     yShift = (window.innerHeight - desiredSize) / 2 * 1.3
 
     zoom.scale scale
