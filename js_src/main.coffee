@@ -329,10 +329,11 @@ loadMap = (callback) ->
 
     svg.call(zoom.on 'zoom', adjustZoom)
 
-    desiredSize = window.innerHeight * 0.9
+    windowWidth = window.innerWidth - 100
+    desiredSize = Math.min(window.innerHeight, windowWidth) * 0.9
     scale = desiredSize / 750
 
-    xShift = (window.innerWidth - desiredSize) / 2 * 0.9
+    xShift = (windowWidth - desiredSize) / 2 * 0.95
     yShift = (window.innerHeight - desiredSize) / 2 * 1.3
 
     zoom.scale scale
