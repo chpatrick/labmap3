@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <head>
   <title>labmap</title>
-	<link rel="stylesheet" href="screen.css" />
+  <link rel="stylesheet" href="screen.css" />
   <link rel="icon" type="image/png" href="favicon.png">
+  <meta charset="utf-8">
 </head>
 <body>
   <script src="js/colorbrewer.js"></script>
@@ -11,20 +12,20 @@
   <div id="map"></div>
   <h1 id="logo">labmap</h1>
   <div id="sidebar">
-  	<div id="sidebar-toggle">&gt;</div>
-  	<div id="sidebar-content">
+    <div id="sidebar-toggle">&gt;</div>
+    <div id="sidebar-content">
       <div id="available-filter-container">
         <input type="checkbox" id="filter-available" name="filter-available" />
         <label for="filter-available">filter free machines</label>
       </div>
-  		<input type="text" id="filter-box" placeholder="filter by name..." />
+      <input type="text" id="filter-box" placeholder="filter by name..." />
       <div id="user-list-container">
         <ul id="selected-user-list" class="user-list">
         </ul>
         <ul id="unselected-user-list" class="user-list">
         </ul>
       </div>
-  	</div>
+    </div>
   </div>
   <footer id="credit">by Patrick Chilton - <a href="https://github.com/vahokif/labmap3" target="_blank">github</a></footer>
   <footer id="kiosk-link" style="display: none">
