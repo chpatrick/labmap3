@@ -209,7 +209,11 @@ updateMachine = (d, i) ->
       titleText = "#{d.hostname} - #{d.state.fullName} (#{d.state.username})"
       if d.state.lockProb
         titleText += " - #{Math.floor(d.state.lockProb * 100)}% chance of AFK"
-      title.text titleText
+        
+      # See below: Chrome will reload the image repeatedly if you update anything
+      # and the tile is currently being hoisted
+      if title.text() != titleText
+        title.text titleText
 
       lockOpacity = if d.state.lockProb? then 0.9 - d.state.lockProb * 0.6 else 1
 
