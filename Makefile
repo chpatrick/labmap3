@@ -1,4 +1,4 @@
-.PHONY: dev
+.PHONY: dev prod
 
 dev: dist/build/labmap/labmap
 	rm -rf dev
@@ -11,6 +11,7 @@ dev: dist/build/labmap/labmap
 	coffee -w -c -o static js_src/main.coffee
 
 prod: dist/build/labmap/labmap js_src/main.js
+	rm -rf prod
 	mkdir -p prod
 	cp $(shell pwd)/dist/build/labmap/labmap prod/labmap
 	cp $(shell pwd)/conf/labmap.conf prod/labmap.conf
@@ -27,9 +28,9 @@ all: js_src/main.js dist/build/labmap/labmap
 	cp js_src/main.js dist/pkg/static
 	cp conf/* dist/pkg
 
-js_src/main.js:
+js_src/main.js: js_src/main.coffee
 	coffee -c -o js_src js_src/main.coffee
 
-dist/build/labmap/labmap:
+dist/build/labmap/labmap: Labmap.hs Labmap/*.hs
 	cabal build
 
