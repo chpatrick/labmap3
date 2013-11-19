@@ -343,13 +343,16 @@ loadMap = (callback) ->
 
     callback()
 
-loadGroups = (callback) ->
+# TODO: fix when proxying is setup
+loadGroups = (username, callback) ->
   d3.xhr('/mygroups')
-    .header('X-Request-User', 'pc2210') # TODO: remove when proxying is setup
+    .header('X-Request-User', username)
     .responseType('text')
     .get (err, response) ->
       myGroups = JSON.parse(response.responseText)
       callback()
+
+window.login = (username) -> loadGroups username, ->
 
 createMachines = (callback) ->
   d3.json 'layout.json', (err, layout) ->
@@ -423,5 +426,5 @@ d3.select(window).on 'load', ->
         currentFilter = availableFilter
         updateMachines()
       else
-        loadGroups ->
-          setInterval updateMachines, 1000
+        #loadGroups ->
+        setInterval updateMachines, 1000

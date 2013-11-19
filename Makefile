@@ -1,11 +1,14 @@
+.PHONY: dev
+
 dev: dist/build/labmap/labmap
+	rm -rf dev
 	mkdir -p dev
 	ln -s $(shell pwd)/dist/build/labmap/labmap dev/labmap
 	ln -s $(shell pwd)/conf/labmap.conf dev/labmap.conf
 	ln -s $(shell pwd)/conf/ssh.conf dev/ssh.conf
+	ln -s ~/.ssh/id_rsa dev/id_labmap
 	ln -s $(shell pwd)/static dev/static
 	coffee -w -c -o static js_src/main.coffee
-	rm -rf dev
 
 prod: dist/build/labmap/labmap js_src/main.js
 	mkdir -p prod
