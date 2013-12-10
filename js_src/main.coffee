@@ -332,10 +332,10 @@ loadMap = (callback) ->
 
     windowWidth = window.innerWidth - 100
     desiredSize = Math.min(window.innerHeight, windowWidth) * 0.9
-    scale = desiredSize / 750
+    scale = desiredSize / 800
 
     xShift = (windowWidth - desiredSize) / 2 * 0.95
-    yShift = (window.innerHeight - desiredSize) / 2 * 1.3
+    yShift = (window.innerHeight - desiredSize)
 
     zoom.scale scale
     zoom.translate [xShift, yShift]
