@@ -5,8 +5,8 @@ unknownColor = '#D19D9D'
 availableColor = '#9DD1B5'
 anonColor = '#9DBBD1'
 
-lockMeanLog = 4.01311
-lockSdLog = 1.46509
+lockMeanLog = 3.641445
+lockSdLog = 0.663507
 
 zoom = d3.behavior.zoom()
 
@@ -271,12 +271,7 @@ logNormalCdf = (x, meanlog, sdlog) -> 1 / 2.0 * erfc(-(Math.log(x) - meanlog)/(s
 logNormalCcdf = (x, meanlog, sdlog) -> 1 - logNormalCdf(x, meanlog, sdlog)
 
 lockedProbability = (lockTime, lockDuration) ->
-  rawProb = logNormalCcdf(lockTime, lockMeanLog, lockSdLog) / logNormalCcdf(lockDuration, lockMeanLog, lockSdLog)
-  if rawProb > 0.95
-    rawProb
-  else
-    # complete hack, improves prediction accuracy
-    rawProb - Math.abs (0.9 - rawProb) + 0.05
+  logNormalCcdf(lockTime, lockMeanLog, lockSdLog) / logNormalCcdf(lockDuration, lockMeanLog, lockSdLog)
 
 updateMachines = ->
   d3.json '/labstate', (err, ls) ->
@@ -290,8 +285,7 @@ updateMachines = ->
 
       for hostname, state of ls
         if state.lockTime
-          lockTime = (new Date().getTime() - new Date(state.lockTime).getTime()) / 1000 / 60
-          state.lockProb = lockedProbability lockTime, state.lockDuration
+          state.lockProb = lockedProbability state.lockTime, state.lockDuration
 
         if state.username
           userEntries.push state

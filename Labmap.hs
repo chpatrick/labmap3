@@ -72,10 +72,11 @@ makeResult ugc ( m, Just (Occupied u) ) = do
         Right le | lockUser le == u -> do
           now@(ZonedTime _ tz) <- getZonedTime
           let lt = ZonedTime (lockTime le) tz
-          let td = (zonedTimeToUTC now `diffUTCTime` zonedTimeToUTC lt) - fromIntegral (lockDuration le * 60)
+          let ltDur = (zonedTimeToUTC now `diffUTCTime` zonedTimeToUTC lt) 
+          let td = ltDur - fromIntegral (lockDuration le * 60)
           return $ if td < 30 * 60
             then resf ++
-            [ "lockTime" .= lt
+            [ "lockTime" .= (floor (ltDur / 60) :: Int)
             , "lockDuration" .= lockDuration le
             ]
             else resf
