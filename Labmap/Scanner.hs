@@ -38,7 +38,7 @@ scanMachine sshOpts hostname = do
   return $ do
     guard (exitCode == ExitSuccess)
     us <- parseWho result
-    return $ case find (\(_, tty) -> tty `elem` [ "tty7", "tty8", "tty9" ]) us of
+    return $ case find (\(_, tty) -> tty `elem` [ "tty7", "tty8", "tty9", "ttys000", "ttys001" ]) us of
       Nothing -> Available
       Just ( u, _ ) -> Occupied $ T.pack u
 
