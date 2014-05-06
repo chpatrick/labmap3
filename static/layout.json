@@ -33,11 +33,12 @@
   "desks-166":     [{"group": "pixel",  "from":  6, "to":  8}],
   "desks-167":     [{"group": "pixel",  "from":  3, "to":  5}],
   "desks-170":     [{"group": "pixel",  "from":  1, "to":  2}],
-  "desks-171-175": [{"group": "texel",  "from": 38, "to": 33}],
-  "desks-project-sw": [{"group": "project",  "from":  5, "to": 8}],
-  "desks-project-nw": [{"group": "project",  "from": 13, "to": 15}],
-  "desks-project-ne": [{"group": "project",  "from":  9, "to": 12}],
-  "desks-project-se": [{"group": "project",  "from":  1, "to": 4}],
-  "desks-project-macs-n": [{"group": "cider", "from": 7, "to": 5}],
-  "desks-project-macs-s": [{"group": "cider", "from": 3, "to": 1}]
+  "desks-171-175": [{"group": "cider",  "from": 1, "to": 6}],
+  "desks-project-sw": [{"group": "arc",  "from":  5, "to": 1}],
+  "desks-project-nw": [{"group": "line",  "from": 20, "to": 19}],
+  "desks-project-ne": [{"group": "arc",  "from":  11, "to": 11}, {"group": "arc",  "from":  10, "to": 10}, {"group": "arc",  "from":  12, "to": 12}],
+
+  "desks-project-se": [{"group": "arc",  "from":  6, "to": 9}],
+  "desks-project-macs-n": [{"group": "line", "from": 8, "to": 5}],
+  "desks-project-macs-s": [{"group": "line", "from": 4, "to": 1}]
 }
